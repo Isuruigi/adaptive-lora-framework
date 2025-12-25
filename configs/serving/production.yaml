@@ -1,0 +1,148 @@
+# Production Serving Configuration
+# Optimized settings for production deployment
+
+server:
+  name: "adaptive-lora-production"
+  environment: "production"
+  
+# API Configuration
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  timeout: 300
+  reload: false
+  
+  # CORS
+  cors:
+    enabled: true
+    origins:
+      - "https://your-domain.com"
+    allow_credentials: true
+    allow_methods: ["GET", "POST"]
+    allow_headers: ["*"]
+
+# Model Configuration
+model:
+  base_model: "meta-llama/Llama-3-8B"
+  adapters_path: "./models/adapters"
+  
+  # Quantization
+  quantization:
+    enabled: true
+    bits: 4
+    quant_type: "nf4"
+    double_quant: true
+  
+  # vLLM Settings
+  vllm:
+    enabled: true
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.9
+    max_model_len: 4096
+    enforce_eager: false
+
+# Inference Settings
+inference:
+  max_tokens: 2048
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 50
+  repetition_penalty: 1.1
+  
+  # Batching
+  batch:
+    enabled: true
+    max_batch_size: 32
+    max_wait_time_ms: 100
+  
+  # Caching
+  cache:
+    enabled: true
+    type: "redis"
+    ttl_seconds: 3600
+    max_size: 10000
+
+# Rate Limiting
+rate_limiting:
+  enabled: true
+  
+  tiers:
+    default:
+      requests_per_minute: 60
+      tokens_per_minute: 100000
+    premium:
+      requests_per_minute: 300
+      tokens_per_minute: 500000
+    enterprise:
+      requests_per_minute: 1000
+      tokens_per_minute: 2000000
+
+# Authentication
+auth:
+  enabled: true
+  
+  jwt:
+    enabled: true
+    algorithm: "HS256"
+    expiry_minutes: 60
+    
+  api_key:
+    enabled: true
+    header_name: "X-API-Key"
+
+# Redis Configuration
+redis:
+  url: "redis://redis:6379"
+  db: 0
+  max_connections: 100
+
+# Monitoring
+monitoring:
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+  
+  health_check:
+    enabled: true
+    path: "/health"
+    include_details: false
+
+# Logging
+logging:
+  level: "INFO"
+  format: "json"
+  file: "/var/log/adaptive-lora/production.log"
+  
+  # Structured logging fields
+  include_fields:
+    - "request_id"
+    - "user_id"
+    - "adapter"
+    - "latency_ms"
+    - "tokens"
+
+# Security
+security:
+  # SSL/TLS handled by load balancer
+  ssl:
+    enabled: false
+  
+  # Request validation
+  max_request_size_mb: 10
+  
+  # Secrets (use environment variables)
+  secrets:
+    jwt_secret: "${JWT_SECRET_KEY}"
+    redis_password: "${REDIS_PASSWORD}"
+
+# Scaling
+scaling:
+  min_replicas: 2
+  max_replicas: 10
+  
+  autoscaling:
+    enabled: true
+    target_cpu_utilization: 70
+    target_memory_utilization: 80

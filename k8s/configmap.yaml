@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: adaptive-lora-config
+  labels:
+    app: adaptive-lora
+data:
+  MODEL_NAME: "meta-llama/Llama-3-8B"
+  TORCH_DTYPE: "bfloat16"
+  LOAD_IN_4BIT: "true"
+  MAX_SEQ_LENGTH: "2048"
+  
+  # LoRA Configuration  
+  LORA_R: "16"
+  LORA_ALPHA: "32"
+  LORA_DROPOUT: "0.05"
+  
+  # Router Configuration
+  ROUTER_ENCODER: "prajjwal1/bert-tiny"
+  NUM_ADAPTERS: "4"
+  MIN_CONFIDENCE: "0.5"
+  
+  # Serving Configuration
+  API_HOST: "0.0.0.0"
+  API_PORT: "8000"
+  MAX_BATCH_SIZE: "32"
+  USE_VLLM: "true"
+  
+  # Monitoring
+  PROMETHEUS_ENABLED: "true"
+  LOG_LEVEL: "INFO"
+  STRUCTURED_LOGGING: "true"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: adaptive-lora-secrets
+  labels:
+    app: adaptive-lora
+type: Opaque
+stringData:
+  hf-token: ""  # Set via kubectl or CI/CD
+  wandb-api-key: ""
+  openai-api-key: ""
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-cache-pvc
+  labels:
+    app: adaptive-lora
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: gp3
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: adapters-pvc
+  labels:
+    app: adaptive-lora
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: gp3

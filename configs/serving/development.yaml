@@ -1,0 +1,120 @@
+# Development Serving Configuration
+# Settings for local development
+
+server:
+  name: "adaptive-lora-development"
+  environment: "development"
+  
+# API Configuration
+api:
+  host: "127.0.0.1"
+  port: 8000
+  workers: 1
+  timeout: 600
+  reload: true  # Enable hot reload
+  
+  # CORS - fully open for development
+  cors:
+    enabled: true
+    origins:
+      - "*"
+    allow_credentials: true
+    allow_methods: ["*"]
+    allow_headers: ["*"]
+
+# Model Configuration
+model:
+  base_model: "meta-llama/Llama-3-8B"
+  adapters_path: "./models/adapters"
+  
+  # Quantization
+  quantization:
+    enabled: true
+    bits: 4
+    quant_type: "nf4"
+    double_quant: true
+  
+  # vLLM Settings - conservative for dev
+  vllm:
+    enabled: false  # Use HuggingFace for easier debugging
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.7
+    max_model_len: 2048
+    enforce_eager: true  # Easier debugging
+
+# Inference Settings
+inference:
+  max_tokens: 1024
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 50
+  repetition_penalty: 1.1
+  
+  # Batching - disabled for simplicity
+  batch:
+    enabled: false
+    max_batch_size: 4
+    max_wait_time_ms: 500
+  
+  # Caching - disabled for debugging
+  cache:
+    enabled: false
+    type: "memory"
+    ttl_seconds: 300
+    max_size: 100
+
+# Rate Limiting - disabled
+rate_limiting:
+  enabled: false
+  
+  tiers:
+    default:
+      requests_per_minute: 1000
+      tokens_per_minute: 1000000
+
+# Authentication - disabled for development
+auth:
+  enabled: false
+  
+  jwt:
+    enabled: false
+    
+  api_key:
+    enabled: false
+
+# Redis Configuration - optional
+redis:
+  url: "redis://localhost:6379"
+  db: 0
+  max_connections: 10
+
+# Monitoring
+monitoring:
+  prometheus:
+    enabled: false
+    port: 9090
+    path: "/metrics"
+  
+  health_check:
+    enabled: true
+    path: "/health"
+    include_details: true
+
+# Logging - very verbose
+logging:
+  level: "DEBUG"
+  format: "text"  # Easier to read
+  file: null  # stdout only
+
+# Debug Settings
+debug:
+  enabled: true
+  profiling: true
+  trace_requests: true
+  show_prompts: true
+
+# Security - minimal for development
+security:
+  ssl:
+    enabled: false
+  max_request_size_mb: 50

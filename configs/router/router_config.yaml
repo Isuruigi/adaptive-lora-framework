@@ -1,0 +1,96 @@
+# Router Configuration
+# Settings for the dynamic adapter routing network
+
+router:
+  name: "adaptive-router"
+  version: "1.0.0"
+
+# Model Architecture
+model:
+  encoder_name: "prajjwal1/bert-tiny"
+  hidden_dim: 256
+  num_heads: 4
+  num_layers: 2
+  dropout: 0.1
+  
+  # Output Configuration
+  num_adapters: 4
+  adapter_names:
+    - "reasoning"
+    - "code"
+    - "analysis"
+    - "base"
+
+# Routing Strategy
+routing:
+  strategy: "soft"  # soft, hard, hierarchical
+  temperature: 1.0
+  top_k: 2
+  min_confidence: 0.3
+  
+  # Hierarchical settings (if strategy=hierarchical)
+  hierarchical:
+    first_stage_categories:
+      - "technical"
+      - "analytical"
+      - "general"
+    category_to_adapters:
+      technical:
+        - "code"
+      analytical:
+        - "reasoning"
+        - "analysis"
+      general:
+        - "base"
+
+# Training Configuration
+training:
+  num_epochs: 10
+  batch_size: 32
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  warmup_steps: 500
+  
+  # Loss Configuration
+  loss:
+    type: "multi_objective"
+    components:
+      - name: "task_classification"
+        weight: 1.0
+      - name: "quality_prediction"
+        weight: 0.5
+      - name: "latency_prediction"
+        weight: 0.3
+  
+  # Active Learning
+  active_learning:
+    enabled: true
+    strategy: "hybrid"  # uncertainty, diversity, hybrid
+    uncertainty_threshold: 0.4
+    query_batch_size: 100
+    
+  # Reinforcement Learning
+  reinforcement:
+    enabled: true
+    algorithm: "ppo"
+    reward_components:
+      quality: 1.0
+      latency: 0.3
+      consistency: 0.5
+
+# Inference Settings
+inference:
+  cache_enabled: true
+  cache_size: 10000
+  batch_inference: true
+  max_batch_size: 64
+  timeout_ms: 100
+
+# Evaluation
+evaluation:
+  metrics:
+    - "accuracy"
+    - "routing_entropy"
+    - "latency_p95"
+    - "quality_correlation"
+  eval_frequency: 100

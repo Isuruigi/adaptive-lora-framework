@@ -1,0 +1,62 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: adaptive-lora-ingress
+  namespace: ml-inference
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+spec:
+  tls:
+  - hosts:
+    - api.adaptive-lora.example.com
+    secretName: adaptive-lora-tls
+  rules:
+  - host: api.adaptive-lora.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: adaptive-lora-service
+            port:
+              number: 8000
+
+---
+# Ingress for WebSocket (separate for different timeout settings)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: adaptive-lora-ws-ingress
+  namespace: ml-inference
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "adaptive-lora-service"
+    nginx.org/websocket-services: "adaptive-lora-service"
+spec:
+  tls:
+  - hosts:
+    - ws.adaptive-lora.example.com
+    secretName: adaptive-lora-ws-tls
+  rules:
+  - host: ws.adaptive-lora.example.com
+    http:
+      paths:
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: adaptive-lora-service
+            port:
+              number: 8000

@@ -1,0 +1,208 @@
+# Monitoring Configuration
+# Comprehensive monitoring and alerting settings
+
+monitoring:
+  name: "adaptive-lora-monitoring"
+  version: "1.0.0"
+
+# Metrics Collection
+metrics:
+  enabled: true
+  
+  # Prometheus
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+    scrape_interval: "15s"
+  
+  # Custom Metrics
+  custom_metrics:
+    - name: "adapter_routing_latency"
+      type: "histogram"
+      description: "Time to route request to adapter"
+      buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0]
+      
+    - name: "adapter_inference_latency"
+      type: "histogram"
+      description: "Adapter inference time"
+      buckets: [0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
+      
+    - name: "tokens_generated"
+      type: "counter"
+      description: "Total tokens generated"
+      labels: ["adapter", "model"]
+      
+    - name: "quality_score"
+      type: "gauge"
+      description: "Output quality score"
+      labels: ["adapter"]
+      
+    - name: "cache_hit_rate"
+      type: "gauge"
+      description: "Cache hit rate"
+
+# Drift Detection
+drift:
+  enabled: true
+  
+  # Detection Methods
+  methods:
+    - name: "psi"
+      threshold: 0.2
+      window_size: 1000
+      
+    - name: "ks_test"
+      threshold: 0.05
+      window_size: 500
+  
+  # Features to Monitor
+  features:
+    - "input_length"
+    - "routing_confidence"
+    - "quality_score"
+    - "latency"
+    
+  # Reference Data
+  reference:
+    path: "data/reference/distribution.pkl"
+    update_frequency: "weekly"
+
+# Alerting
+alerting:
+  enabled: true
+  
+  # Notification Channels
+  channels:
+    slack:
+      enabled: true
+      webhook_url: "${SLACK_WEBHOOK_URL}"
+      default_channel: "#alerts"
+      
+    email:
+      enabled: true
+      smtp_host: "smtp.example.com"
+      smtp_port: 587
+      from_address: "alerts@example.com"
+      to_addresses:
+        - "team@example.com"
+        
+    pagerduty:
+      enabled: false
+      routing_key: "${PAGERDUTY_ROUTING_KEY}"
+  
+  # Alert Rules
+  rules:
+    - name: "high_latency"
+      condition: "avg(adapter_inference_latency) > 5.0"
+      severity: "warning"
+      duration: "5m"
+      channels: ["slack"]
+      
+    - name: "error_rate_spike"
+      condition: "rate(errors_total) > 0.05"
+      severity: "critical"
+      duration: "2m"
+      channels: ["slack", "pagerduty"]
+      
+    - name: "quality_degradation"
+      condition: "avg(quality_score) < 0.7"
+      severity: "warning"
+      duration: "10m"
+      channels: ["slack", "email"]
+      
+    - name: "drift_detected"
+      condition: "any(drift_score > threshold)"
+      severity: "warning"
+      duration: "15m"
+      channels: ["slack"]
+      
+    - name: "gpu_memory_high"
+      condition: "gpu_memory_utilization > 0.95"
+      severity: "critical"
+      duration: "1m"
+      channels: ["slack", "pagerduty"]
+  
+  # Aggregation
+  aggregation:
+    enabled: true
+    window: "5m"
+    max_per_window: 3
+  
+  # Silencing
+  silencing:
+    enabled: true
+    rules: []
+
+# Dashboards
+dashboards:
+  grafana:
+    enabled: true
+    url: "http://grafana:3000"
+    
+    panels:
+      - name: "Request Rate"
+        type: "graph"
+        query: "rate(requests_total[5m])"
+        
+      - name: "Latency Distribution"
+        type: "heatmap"
+        query: "adapter_inference_latency_bucket"
+        
+      - name: "Adapter Usage"
+        type: "piechart"
+        query: "sum by (adapter)(requests_total)"
+        
+      - name: "Quality Scores"
+        type: "gauge"
+        query: "avg by (adapter)(quality_score)"
+        
+      - name: "GPU Utilization"
+        type: "graph"
+        query: "gpu_memory_utilization"
+
+# Logging Integration
+logging:
+  structured: true
+  format: "json"
+  
+  # Log Levels by Component
+  levels:
+    root: "INFO"
+    router: "DEBUG"
+    inference: "INFO"
+    monitoring: "DEBUG"
+  
+  # Log Aggregation
+  aggregation:
+    enabled: true
+    service: "elasticsearch"
+    host: "elasticsearch:9200"
+    index_prefix: "adaptive-lora"
+
+# Health Checks
+health:
+  enabled: true
+  path: "/health"
+  
+  checks:
+    - name: "gpu_available"
+      critical: true
+      
+    - name: "model_loaded"
+      critical: true
+      
+    - name: "redis_connected"
+      critical: false
+      
+    - name: "adapters_ready"
+      critical: true
+
+# Performance Profiling
+profiling:
+  enabled: false  # Enable only for debugging
+  
+  settings:
+    sample_rate: 0.01
+    trace_slow_requests: true
+    slow_threshold_ms: 1000

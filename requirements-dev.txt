@@ -1,0 +1,32 @@
+# Development dependencies
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.11.0
+
+# Code quality
+flake8>=6.1.0
+black>=23.0.0
+isort>=5.12.0
+mypy>=1.5.0
+
+# Type stubs
+types-requests>=2.31.0
+types-PyYAML>=6.0.0
+
+# Documentation
+mkdocs>=1.5.0
+mkdocs-material>=9.0.0
+mkdocstrings>=0.23.0
+
+# Debugging
+ipdb>=0.13.0
+ipython>=8.0.0
+
+# Profiling
+memory-profiler>=0.61.0
+line-profiler>=4.0.0
+
+# Jupyter
+jupyter>=1.0.0
+jupyterlab>=4.0.0

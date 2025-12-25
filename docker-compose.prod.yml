@@ -1,0 +1,155 @@
+# Production Docker Compose Configuration
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: adaptive-lora:latest
+    container_name: adaptive-lora-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Model configuration
+      - BASE_MODEL=${BASE_MODEL:-meta-llama/Meta-Llama-3-8B}
+      - ADAPTERS_DIR=/app/models/adapters
+      - ROUTER_PATH=/app/models/router/best_router.pt
+      - MAX_MODEL_LEN=4096
+      - GPU_MEMORY_UTILIZATION=0.85
+
+      # API configuration
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - ENABLE_AUTH=${ENABLE_AUTH:-false}
+      - JWT_SECRET=${JWT_SECRET:-}
+
+      # External services
+      - REDIS_URL=redis://redis:6379
+      - HF_TOKEN=${HF_TOKEN}
+
+      # Logging
+      - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+
+      # Monitoring
+      - ENABLE_PROMETHEUS=true
+
+      # LLM Judge (optional)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+
+    volumes:
+      - model-cache:/root/.cache/huggingface
+      - ./models:/app/models:ro
+      - ./configs:/app/configs:ro
+      - ./logs:/app/logs
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+        limits:
+          memory: 48G
+
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    networks:
+      - lora-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: adaptive-lora-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lora-network
+
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: adaptive-lora-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+    networks:
+      - lora-network
+
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: adaptive-lora-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - lora-network
+
+  # Optional: Nginx reverse proxy with SSL
+  nginx:
+    image: nginx:alpine
+    container_name: adaptive-lora-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+    networks:
+      - lora-network
+    profiles:
+      - with-nginx
+
+volumes:
+  model-cache:
+    driver: local
+  redis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  lora-network:
+    driver: bridge

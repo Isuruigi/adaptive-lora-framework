@@ -1,0 +1,80 @@
+# Base Adapter Configuration
+# General-purpose adapter for tasks not covered by specialized adapters
+
+adapter:
+  name: "base"
+  description: "General-purpose adapter for miscellaneous tasks"
+  version: "1.0.0"
+
+# LoRA Configuration
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  bias: "none"
+  target_modules:
+    - "q_proj"
+    - "v_proj"
+  task_type: "CAUSAL_LM"
+
+# Training Configuration
+training:
+  num_train_epochs: 2
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 8
+  learning_rate: 2.0e-4
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.03
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  
+  # Optimization
+  optim: "paged_adamw_8bit"
+  bf16: true
+  fp16: false
+  gradient_checkpointing: true
+  
+  # Logging & Saving
+  logging_steps: 10
+  save_steps: 100
+  eval_steps: 100
+  save_total_limit: 3
+  
+  # Advanced
+  seed: 42
+  dataloader_num_workers: 4
+  remove_unused_columns: false
+
+# Data Configuration
+data:
+  max_length: 2048
+  template: "alpaca"
+  train_path: "data/base/train.jsonl"
+  eval_path: "data/base/eval.jsonl"
+  
+  # Preprocessing
+  instruction_key: "instruction"
+  input_key: "input"
+  output_key: "output"
+  
+  # Validation
+  validation_split: 0.1
+  min_instruction_length: 5
+  max_instruction_length: 500
+  min_output_length: 10
+  max_output_length: 2000
+
+# Task-Specific Settings
+task:
+  focus_areas:
+    - "general_qa"
+    - "creative_writing"
+    - "translation"
+    - "explanation"
+    - "conversation"
+  
+  preferred_output_style:
+    - "natural"
+    - "helpful"
+    - "concise"

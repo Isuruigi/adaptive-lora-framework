@@ -1,0 +1,137 @@
+# Router Training Configuration
+# Detailed training settings for the router network
+
+training:
+  name: "router-training"
+  
+# Data
+data:
+  train_path: "data/router/train.jsonl"
+  eval_path: "data/router/eval.jsonl"
+  test_path: "data/router/test.jsonl"
+  
+  max_length: 512
+  label_field: "adapter"
+  text_field: "instruction"
+  
+  # Preprocessing
+  lowercase: false
+  remove_special_chars: false
+  
+  # Augmentation
+  augmentation:
+    enabled: true
+    strategies:
+      - "synonym_replacement"
+      - "random_insertion"
+
+# Optimizer
+optimizer:
+  name: "adamw"
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+
+# Scheduler
+scheduler:
+  name: "cosine"
+  warmup_ratio: 0.1
+  min_lr_ratio: 0.01
+
+# Training Loop
+loop:
+  num_epochs: 10
+  batch_size: 32
+  eval_batch_size: 64
+  gradient_accumulation_steps: 1
+  max_grad_norm: 1.0
+  
+  # Logging
+  logging_steps: 50
+  eval_steps: 200
+  save_steps: 500
+  
+  # Checkpointing
+  save_total_limit: 3
+  save_best_only: true
+  metric_for_best_model: "eval_accuracy"
+  greater_is_better: true
+  
+  # Early Stopping
+  early_stopping:
+    enabled: true
+    patience: 3
+    min_delta: 0.001
+
+# Multi-objective Training
+multi_objective:
+  enabled: true
+  
+  objectives:
+    - name: "adapter_classification"
+      weight: 1.0
+      loss: "cross_entropy"
+      
+    - name: "quality_regression"
+      weight: 0.5
+      loss: "mse"
+      
+    - name: "confidence_calibration"
+      weight: 0.3
+      loss: "focal"
+
+# Curriculum Learning
+curriculum:
+  enabled: true
+  strategy: "self_paced"
+  initial_subset: 0.3
+  growth_rate: 0.1
+  difficulty_metric: "loss"
+
+# Active Learning Integration
+active_learning:
+  enabled: true
+  initial_labeled: 1000
+  query_size: 100
+  max_iterations: 10
+  
+  strategies:
+    uncertainty:
+      enabled: true
+      method: "entropy"
+      weight: 0.5
+    diversity:
+      enabled: true
+      method: "kmeans"
+      weight: 0.5
+
+# Reinforcement Learning Fine-tuning
+reinforcement:
+  enabled: false
+  start_after_epoch: 5
+  
+  algorithm: "ppo"
+  ppo:
+    clip_epsilon: 0.2
+    value_loss_coef: 0.5
+    entropy_coef: 0.01
+    
+  reward:
+    quality_weight: 1.0
+    latency_weight: 0.3
+    consistency_weight: 0.5
+
+# Distributed Training
+distributed:
+  enabled: false
+  backend: "nccl"
+  world_size: 1
+
+# Experiment Tracking
+tracking:
+  wandb:
+    enabled: true
+    project: "adaptive-lora-router"
+    entity: null
+    tags: ["router", "training"]

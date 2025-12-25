@@ -1,0 +1,110 @@
+# System Configuration
+# Global system-wide settings
+
+system:
+  name: "adaptive-lora-framework"
+  version: "1.0.0"
+  environment: "${ENVIRONMENT:development}"
+
+# Paths
+paths:
+  base_dir: "./"
+  models_dir: "./models"
+  adapters_dir: "./models/adapters"
+  data_dir: "./data"
+  logs_dir: "./logs"
+  cache_dir: "./cache"
+  checkpoints_dir: "./checkpoints"
+
+# Logging
+logging:
+  level: "${LOG_LEVEL:INFO}"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "${LOG_FILE:null}"
+  json_format: false
+  colored: true
+
+# Device Configuration
+device:
+  cuda: true
+  device_map: "auto"
+  
+  # Memory Management
+  memory:
+    fraction: 0.9
+    allow_growth: true
+    
+  # Multi-GPU
+  distributed:
+    enabled: false
+    backend: "nccl"
+    world_size: 1
+
+# Default Model Settings
+model:
+  name: "meta-llama/Llama-3-8B"
+  revision: "main"
+  trust_remote_code: true
+  torch_dtype: "bfloat16"
+  
+  # Quantization Defaults
+  quantization:
+    enabled: true
+    bits: 4
+    quant_type: "nf4"
+    compute_dtype: "bfloat16"
+    double_quant: true
+
+# Default Training Settings
+training:
+  seed: 42
+  bf16: true
+  fp16: false
+  gradient_checkpointing: true
+  
+  # Experiment Tracking
+  wandb:
+    enabled: "${WANDB_ENABLED:false}"
+    project: "adaptive-lora"
+    entity: "${WANDB_ENTITY:null}"
+
+# API Keys (from environment)
+api_keys:
+  openai: "${OPENAI_API_KEY:null}"
+  anthropic: "${ANTHROPIC_API_KEY:null}"
+  huggingface: "${HF_TOKEN:null}"
+  wandb: "${WANDB_API_KEY:null}"
+
+# Feature Flags
+features:
+  active_learning: true
+  reinforcement_learning: false
+  llm_judge: false
+  drift_detection: true
+  auto_scaling: false
+
+# Performance Settings
+performance:
+  # Inference
+  inference:
+    max_batch_size: 32
+    timeout_seconds: 300
+    use_flash_attention: true
+    
+  # Caching
+  cache:
+    enabled: true
+    backend: "memory"  # memory, redis
+    ttl_seconds: 3600
+    max_size: 10000
+
+# Security
+security:
+  jwt_secret: "${JWT_SECRET_KEY:change-me-in-production}"
+  api_key_hash_algorithm: "sha256"
+  token_expiry_minutes: 60
+
+# Rate Limits (defaults)
+rate_limits:
+  requests_per_minute: 60
+  tokens_per_minute: 100000
